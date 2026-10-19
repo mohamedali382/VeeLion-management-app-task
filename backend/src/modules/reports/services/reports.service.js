@@ -13,11 +13,18 @@ async function getTasksSummary() {
 
   const byStatus = {
     todo: 0,
+    'in-progress': 0,
     done: 0,
   };
 
   for (const task of tasks) {
-    byStatus[task.completed ? 'done' : 'todo'] += 1;
+    const status = ['todo', 'in-progress', 'done'].includes(task.status)
+      ? task.status
+      : task.completed
+        ? 'done'
+        : 'todo';
+
+    byStatus[status] += 1;
   }
 
   const now = Date.now();

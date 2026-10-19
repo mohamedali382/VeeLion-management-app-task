@@ -1,4 +1,6 @@
-import type { ActivityLog, Task } from "@/types/api";
+import type { ActivityLog, Task, TaskStatus, TasksSummary } from "@/types/api";
+
+const TASK_STATUSES: TaskStatus[] = ["todo", "in-progress", "done"];
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -13,6 +15,7 @@ function isTask(value: unknown): value is Task {
     typeof value.id === "string" &&
     typeof value.title === "string" &&
     typeof value.completed === "boolean" &&
+    TASK_STATUSES.includes(value.status as TaskStatus) &&
     typeof value.createdAt === "string" &&
     Number.isFinite(Date.parse(value.createdAt)) &&
     typeof value.updatedAt === "string" &&
@@ -56,6 +59,32 @@ export function parseActivityResponse(value: unknown): ActivityLog[] {
   }
 
   return value;
+}
+
+export function parseTasksSummary(value: unknown): TasksSummary {
+  if (!isRecord(value) || !isRecord(value.byStatus)) {
+    throw new Error("The reports service returned invalid data.");
+  }
+
+  const byStatus = value.byStatus;
+  const isCount = (count: unknown) => Number.isInteger(count) && Number(count) >= 0;
+  if (
+    !isCount(value.total) ||
+    !isCount(value.recentActivityCount) ||
+    !TASK_STATUSES.every((status) => isCount(byStatus[status]))
+  ) {
+    throw new Error("The reports service returned invalid data.");
+  }
+
+  return {
+    total: Number(value.total),
+    byStatus: {
+      todo: Number(byStatus.todo),
+      "in-progress": Number(byStatus["in-progress"]),
+      done: Number(byStatus.done),
+    },
+    recentActivityCount: Number(value.recentActivityCount),
+  };
 }
 
 export function parseErrorMessage(value: unknown, fallback: string): string {

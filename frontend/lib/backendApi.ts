@@ -3,8 +3,9 @@ import {
   parseActivityResponse,
   parseTaskResponse,
   parseTasksResponse,
+  parseTasksSummary,
 } from "@/lib/apiValidation";
-import type { ActivityLog, ErrorResponse, Task } from "@/types/api";
+import type { ActivityLog, ErrorResponse, Task, TasksSummary } from "@/types/api";
 
 export class BackendApiError extends Error {
   constructor(public readonly statusCode: number, message: string) {
@@ -82,5 +83,19 @@ export async function getActivityFromBackend(): Promise<ActivityLog[]> {
     return parseActivityResponse(body);
   } catch {
     throw new BackendApiError(502, "The backend returned invalid activity data.");
+  }
+}
+
+export async function getTasksSummaryFromBackend(): Promise<TasksSummary> {
+  const body = await requestBackend(
+    "/reports/tasks-summary",
+    undefined,
+    "Unable to fetch the task report."
+  );
+
+  try {
+    return parseTasksSummary(body);
+  } catch {
+    throw new BackendApiError(502, "The backend returned invalid report data.");
   }
 }

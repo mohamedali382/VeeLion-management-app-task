@@ -19,13 +19,29 @@ function buildTaskRecord(payload) {
     id: createId(),
     title: payload.title,
     completed: payload.completed,
+    status: payload.status,
     createdAt: now,
     updatedAt: now,
   };
 }
 
+function normalizeTask(task) {
+  const status = ['todo', 'in-progress', 'done'].includes(task.status)
+    ? task.status
+    : task.completed
+      ? 'done'
+      : 'todo';
+
+  return {
+    ...task,
+    status,
+    completed: status === 'done',
+  };
+}
+
 async function getAllTasks() {
-  return readJsonArray(TASKS_FILE_PATH);
+  const tasks = await readJsonArray(TASKS_FILE_PATH);
+  return tasks.map(normalizeTask);
 }
 
 async function getTaskById(taskId) {
@@ -36,7 +52,7 @@ async function getTaskById(taskId) {
     throw new HttpError(404, 'Task not found.');
   }
 
-  return task;
+  return normalizeTask(task);
 }
 
 async function createTask(payload) {
@@ -60,7 +76,7 @@ async function updateTask(taskId, payload) {
     }
 
     const updatedTask = {
-      ...tasks[taskIndex],
+      ...normalizeTask(tasks[taskIndex]),
       ...updates,
       updatedAt: new Date().toISOString(),
     };

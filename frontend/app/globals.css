@@ -171,6 +171,54 @@ main {
   color: var(--danger);
 }
 
+.report-header {
+  padding: 1rem;
+}
+
+.report-header h1,
+.report-header p,
+.report-metric h2,
+.report-metric p {
+  margin: 0;
+}
+
+.report-header p {
+  margin-top: 0.35rem;
+}
+
+.report-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 1rem;
+}
+
+.report-metric {
+  display: grid;
+  align-content: start;
+  gap: 0.65rem;
+  min-height: 128px;
+  padding: 1rem;
+}
+
+.report-metric h2 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.report-metric > p {
+  font-size: 2rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-total {
+  border-top: 3px solid var(--primary);
+}
+
+.report-activity-count small {
+  align-self: end;
+}
+
 .error-panel p {
   margin-bottom: 0.75rem;
 }

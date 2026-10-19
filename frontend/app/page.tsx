@@ -6,7 +6,7 @@ export default function HomePage() {
       <header className="stack home-header">
         <h1>VeeLion Frontend Assessment</h1>
         <p className="muted-text">
-          Two separate modules built against the provided backend.
+          Task management, activity, and reporting.
         </p>
       </header>
 
@@ -19,6 +19,11 @@ export default function HomePage() {
         <Link href="/activity" className="card home-module-link">
           <h2>Activity Feed</h2>
           <p>Browse and search recorded activity.</p>
+        </Link>
+
+        <Link href="/reports" className="card home-module-link">
+          <h2>Reports</h2>
+          <p>Review task totals, status breakdown, and recent activity.</p>
         </Link>
       </section>
     </main>

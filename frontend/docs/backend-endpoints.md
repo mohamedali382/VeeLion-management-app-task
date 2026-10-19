@@ -23,6 +23,7 @@ type Task = {
   id: string;
   title: string;
   completed: boolean;
+  status: "todo" | "in-progress" | "done";
   createdAt: string; // ISO datetime
   updatedAt: string; // ISO datetime
 };
@@ -53,6 +54,7 @@ Create a task.
 type CreateTaskRequest = {
   title: string; // required, trimmed, non-empty
   completed?: boolean; // default false
+  status?: "todo" | "in-progress" | "done";
 };
 
 type CreateTaskResponse = {
@@ -73,6 +75,7 @@ Update task title or status.
 type PatchTaskRequest = {
   title?: string; // if provided, must be string and long enough after trim
   completed?: boolean;
+  status?: "todo" | "in-progress" | "done";
 };
 
 type PatchTaskResponse = {
@@ -127,7 +130,7 @@ type CreateActivityResponse = ActivityLog;
 ```
 
 Notes:
-- `action` and `info` are currently not validated by backend.
+- Provided `action` and `info` values must be non-empty strings.
 - Response shape for activity endpoints is raw objects/arrays (not wrapped in `data`).
 
 ## Reports Endpoints
@@ -141,6 +144,7 @@ type TasksSummary = {
   total: number;
   byStatus: {
     todo: number;
+    "in-progress": number;
     done: number;
   };
   recentActivityCount: number;
@@ -150,7 +154,8 @@ type GetTasksSummaryResponse = TasksSummary;
 ```
 
 Notes:
-- Task status is represented by the boolean `completed`, so the summary includes only `todo` and `done`.
+- `status` is the task status source of truth; older records without it are derived from `completed` (`false` becomes `todo`, `true` becomes `done`).
+- `completed` remains synchronized for compatibility: it is true only for `done`.
 - `recentActivityCount` counts valid activity timestamps from the preceding seven days.
 - Response shape is raw object.
 

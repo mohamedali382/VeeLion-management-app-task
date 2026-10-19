@@ -1,6 +1,7 @@
 const HttpError = require('../../../utils/httpError');
 
-const ALLOWED_FIELDS = ['title', 'completed'];
+const ALLOWED_FIELDS = ['title', 'completed', 'status'];
+const TASK_STATUSES = ['todo', 'in-progress', 'done'];
 
 function validatePayloadShape(payload) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
@@ -49,6 +50,33 @@ function normalizeCompletedIfPresent(payload, normalized) {
   normalized.completed = payload.completed;
 }
 
+function normalizeStatusIfPresent(payload, normalized) {
+  if (!Object.hasOwn(payload, 'status')) {
+    return;
+  }
+
+  if (!TASK_STATUSES.includes(payload.status)) {
+    throw new HttpError(400, '"status" must be todo, in-progress, or done.');
+  }
+
+  normalized.status = payload.status;
+}
+
+function synchronizeStatus(normalized) {
+  if (normalized.status !== undefined && normalized.completed !== undefined) {
+    if (normalized.completed !== (normalized.status === 'done')) {
+      throw new HttpError(400, '"status" and "completed" values conflict.');
+    }
+    return;
+  }
+
+  if (normalized.status !== undefined) {
+    normalized.completed = normalized.status === 'done';
+  } else if (normalized.completed !== undefined) {
+    normalized.status = normalized.completed ? 'done' : 'todo';
+  }
+}
+
 function validateCreateTask(payload) {
   validatePayloadShape(payload);
   ensureNoUnknownFields(payload);
@@ -56,13 +84,17 @@ function validateCreateTask(payload) {
   const normalized = {};
   normalizeTitleIfPresent(payload, normalized);
   normalizeCompletedIfPresent(payload, normalized);
+  normalizeStatusIfPresent(payload, normalized);
 
   if (!Object.hasOwn(normalized, 'title')) {
     throw new HttpError(400, '"title" is required.');
   }
 
-  if (!Object.hasOwn(normalized, 'completed')) {
+  if (!Object.hasOwn(normalized, 'completed') && !Object.hasOwn(normalized, 'status')) {
     normalized.completed = false;
+    normalized.status = 'todo';
+  } else {
+    synchronizeStatus(normalized);
   }
 
   return normalized;
@@ -75,6 +107,7 @@ function validateUpdateTask(payload) {
   const normalized = {};
   normalizeTitleIfPresent(payload, normalized);
   normalizeCompletedIfPresent(payload, normalized);
+  normalizeStatusIfPresent(payload, normalized);
 
   if (Object.keys(normalized).length === 0) {
     throw new HttpError(400, 'Provide at least one updatable field.');
@@ -83,6 +116,8 @@ function validateUpdateTask(payload) {
   if (normalized.title !== undefined && normalized.title.length < 2) {
     throw new HttpError(400, 'Title must be at least 2 characters long.');
   }
+
+  synchronizeStatus(normalized);
 
   return normalized;
 }
