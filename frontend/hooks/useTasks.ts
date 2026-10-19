@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ErrorResponse, Task, TaskFilter, TaskResponse, TasksResponse } from "@/types/api";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { parseErrorMessage, parseTaskResponse, parseTasksResponse } from "@/lib/apiValidation";
+import type { Task, TaskFilter } from "@/types/api";
 
 function getErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error) {
@@ -11,7 +12,11 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
+async function requestJson<T>(
+  url: string,
+  parse: (value: unknown) => T,
+  init?: RequestInit
+): Promise<T> {
   const response = await fetch(url, {
     ...init,
     headers: {
@@ -21,58 +26,83 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
+    let body: unknown;
     try {
-      const body = (await response.json()) as ErrorResponse;
-      throw new Error(body.error?.message || `Request failed with ${response.status}`);
-    } catch (error) {
-      throw new Error(getErrorMessage(error, `Request failed with ${response.status}`));
+      body = await response.json();
+    } catch {
+      body = null;
     }
+
+    throw new Error(parseErrorMessage(body, `Request failed with ${response.status}`));
   }
 
-  return (await response.json()) as T;
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    throw new Error("The API returned invalid JSON.");
+  }
+
+  return parse(body);
 }
 
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filter, setFilter] = useState<TaskFilter>("all");
   const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>("");
-  const [updatingTaskId, setUpdatingTaskId] = useState<string>("");
+  const [loadError, setLoadError] = useState<string>("");
+  const [updateErrors, setUpdateErrors] = useState<Record<string, string>>({});
+  const [updatingTaskIds, setUpdatingTaskIds] = useState<Set<string>>(() => new Set());
+  const pendingTaskIds = useRef(new Set<string>());
 
   const fetchTasks = useCallback(async () => {
     try {
       setLoading(true);
-      setError("");
+      setLoadError("");
 
-      const body = await requestJson<TasksResponse>("/api/tasks", {
+      const nextTasks = await requestJson("/api/tasks", parseTasksResponse, {
         method: "GET",
       });
 
-      setTasks(body.data);
+      setTasks(nextTasks);
     } catch (error) {
-      setError(getErrorMessage(error, "Could not load tasks right now."));
+      setLoadError(getErrorMessage(error, "Could not load tasks right now."));
     } finally {
       setLoading(false);
     }
   }, []);
 
   const updateTaskStatus = useCallback(async (taskId: string, completed: boolean) => {
-    try {
-      setUpdatingTaskId(taskId);
-      setError("");
+    if (pendingTaskIds.current.has(taskId)) {
+      return;
+    }
 
-      const body = await requestJson<TaskResponse>(`/api/tasks/${taskId}`, {
-        method: "PATCH",
-        body: JSON.stringify({ completed }),
-      });
+    pendingTaskIds.current.add(taskId);
+    setUpdatingTaskIds(new Set(pendingTaskIds.current));
+    setUpdateErrors((previous) => {
+      const next = { ...previous };
+      delete next[taskId];
+      return next;
+    });
+
+    try {
+      const updatedTask = await requestJson(
+        `/api/tasks/${encodeURIComponent(taskId)}`,
+        parseTaskResponse,
+        { method: "PATCH", body: JSON.stringify({ completed }) }
+      );
 
       setTasks((previous) =>
-        previous.map((task) => (task.id === taskId ? body.data : task))
+        previous.map((task) => (task.id === taskId ? updatedTask : task))
       );
     } catch (error) {
-      setError(getErrorMessage(error, "Could not update task status."));
+      setUpdateErrors((previous) => ({
+        ...previous,
+        [taskId]: getErrorMessage(error, "Could not update task status."),
+      }));
     } finally {
-      setUpdatingTaskId("");
+      pendingTaskIds.current.delete(taskId);
+      setUpdatingTaskIds(new Set(pendingTaskIds.current));
     }
   }, []);
 
@@ -97,8 +127,9 @@ export function useTasks() {
     filteredTasks,
     filter,
     loading,
-    error,
-    updatingTaskId,
+    loadError,
+    updateErrors,
+    updatingTaskIds,
     setFilter,
     fetchTasks,
     updateTaskStatus,

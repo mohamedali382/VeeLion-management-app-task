@@ -85,3 +85,138 @@ main {
   display: grid;
   gap: 1rem;
 }
+
+.muted-text {
+  color: var(--muted);
+}
+
+.home-header {
+  margin-bottom: 1.5rem;
+}
+
+.home-header h1,
+.home-header p,
+.home-module-link h2,
+.home-module-link p,
+.activity-panel h1,
+.task-dashboard-header h1,
+.status-panel p,
+.error-panel p,
+.empty-state p,
+.task-item-title,
+.task-item-error p {
+  margin: 0;
+}
+
+.home-module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: 1rem;
+}
+
+.home-module-link {
+  display: block;
+  padding: 1rem;
+}
+
+.home-module-link p {
+  margin-top: 0.6rem;
+  color: var(--muted);
+}
+
+.activity-panel,
+.task-dashboard-header,
+.status-panel,
+.error-panel,
+.empty-state {
+  padding: 1rem;
+}
+
+.activity-panel h1 {
+  margin-bottom: 0.75rem;
+}
+
+.activity-list,
+.task-list {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.activity-item {
+  display: grid;
+  gap: 0.25rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.activity-item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.activity-action {
+  font-weight: 600;
+}
+
+.error-panel,
+.task-item-error {
+  border-color: #e3b4c0;
+  background: #fff8fa;
+}
+
+.error-panel {
+  color: var(--danger);
+}
+
+.error-panel p {
+  margin-bottom: 0.75rem;
+}
+
+.status-filter {
+  padding: 0.8rem;
+}
+
+.status-filter-label {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+
+.status-filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.task-item {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.85rem;
+}
+
+.task-item-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.task-item-title {
+  font-weight: 600;
+}
+
+.task-action-row {
+  display: flex;
+}
+
+.task-item-error {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--danger);
+}

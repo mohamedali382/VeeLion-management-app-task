@@ -1,72 +1,86 @@
 import { BACKEND_BASE_URL } from "@/lib/constants";
-import type { ActivityLog, ErrorResponse, Task, TaskResponse, TasksResponse } from "@/types/api";
+import {
+  parseActivityResponse,
+  parseTaskResponse,
+  parseTasksResponse,
+} from "@/lib/apiValidation";
+import type { ActivityLog, ErrorResponse, Task } from "@/types/api";
+
+export class BackendApiError extends Error {
+  constructor(public readonly statusCode: number, message: string) {
+    super(message);
+    this.name = "BackendApiError";
+  }
+}
 
 function buildBackendUrl(path: string): string {
   return `${BACKEND_BASE_URL}${path}`;
 }
 
 async function parseError(response: Response): Promise<string> {
-  let fallback = `Request failed with status ${response.status}`;
-
   try {
     const body = (await response.json()) as ErrorResponse;
-    return body.error?.message || fallback;
+    return body.error?.message || `Request failed with status ${response.status}`;
   } catch {
-    return fallback;
+    return `Request failed with status ${response.status}`;
+  }
+}
+
+async function requestBackend(path: string, init: RequestInit | undefined, fallback: string) {
+  let response: Response;
+
+  try {
+    response = await fetch(buildBackendUrl(path), {
+      ...init,
+      cache: "no-store",
+    });
+  } catch (error) {
+    throw new BackendApiError(502, fallback);
+  }
+
+  if (!response.ok) {
+    throw new BackendApiError(response.status, await parseError(response));
+  }
+
+  try {
+    return await response.json() as unknown;
+  } catch {
+    throw new BackendApiError(502, "The backend returned an invalid response.");
   }
 }
 
 export async function getTasksFromBackend(): Promise<Task[]> {
+  const body = await requestBackend("/tasks", undefined, "Unable to fetch tasks.");
   try {
-    const response = await fetch(buildBackendUrl("/tasks"), {
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      throw new Error(await parseError(response));
-    }
-
-    const body = (await response.json()) as TasksResponse;
-    return body.data;
-  } catch (error) {
-    throw new Error(error instanceof Error ? error.message : "Failed to load tasks.");
+    return parseTasksResponse(body);
+  } catch {
+    throw new BackendApiError(502, "The backend returned invalid task data.");
   }
 }
 
 export async function updateTaskInBackend(taskId: string, completed: boolean): Promise<Task> {
-  try {
-    const response = await fetch(buildBackendUrl(`/tasks/${taskId}`), {
+  const body = await requestBackend(
+    `/tasks/${encodeURIComponent(taskId)}`,
+    {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ completed }),
-      cache: "no-store",
-    });
+    },
+    "Unable to update task."
+  );
 
-    if (!response.ok) {
-      throw new Error(await parseError(response));
-    }
-
-    const body = (await response.json()) as TaskResponse;
-    return body.data;
-  } catch (error) {
-    throw new Error(error instanceof Error ? error.message : "Failed to update task.");
+  try {
+    return parseTaskResponse(body);
+  } catch {
+    throw new BackendApiError(502, "The backend returned invalid task data.");
   }
 }
 
 export async function getActivityFromBackend(): Promise<ActivityLog[]> {
+  const body = await requestBackend("/activity", undefined, "Unable to fetch activity logs.");
   try {
-    const response = await fetch(buildBackendUrl("/activity"), {
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      throw new Error(await parseError(response));
-    }
-
-    return (await response.json()) as ActivityLog[];
-  } catch (error) {
-    throw new Error(error instanceof Error ? error.message : "Failed to load activity logs.");
+    return parseActivityResponse(body);
+  } catch {
+    throw new BackendApiError(502, "The backend returned invalid activity data.");
   }
 }

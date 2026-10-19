@@ -567,3 +567,4 @@ This section covers the frontend pages, API routes, task components, and `useTas
 ## Frontend summary
 
 The most significant frontend concerns are the activity page's artificial timer-driven updates and redundant derived state, task-update errors hiding the task list, and incorrect error/status handling in the API proxy routes. The task components are generally small and typed; the main opportunities there are clearer empty/error states and moving repeated inline styling into CSS classes.
+

@@ -13,8 +13,9 @@ type StatusFilterProps = {
 
 export function StatusFilter({ value, onChange }: StatusFilterProps) {
   return (
-    <section aria-label="Filter tasks by status" className="card" style={{ padding: "0.8rem" }}>
-      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+    <section aria-label="Filter tasks by status" className="card status-filter">
+      <p className="status-filter-label">Status</p>
+      <div className="status-filter-options">
         {FILTERS.map((filter) => {
           const active = filter.value === value;
 
