@@ -5,8 +5,19 @@ function errorHandler(error, req, res, next) {
     return next(error);
   }
 
-  const statusCode = Number.isInteger(error.statusCode) ? error.statusCode : 500;
-  const message = statusCode === 500 ? 'Internal server error' : error.message;
+  const reportedStatus = Number.isInteger(error.statusCode)
+    ? error.statusCode
+    : error.status;
+  const statusCode = Number.isInteger(reportedStatus)
+    && reportedStatus >= 400
+    && reportedStatus < 600
+    ? reportedStatus
+    : 500;
+  const message = error instanceof HttpError
+    ? error.message
+    : statusCode >= 500
+      ? 'Internal server error'
+      : 'Invalid request.';
 
   const response = {
     error: {

@@ -1,55 +1,62 @@
-const fs = require('node:fs');
-const path = require('node:path');
+const { createId } = require('../../../utils/id');
+const {
+  getDataFilePath,
+  readJsonArray,
+  updateJsonArray,
+} = require('../../../utils/jsonStore');
+const HttpError = require('../../../utils/httpError');
 
-const fp = path.join(process.cwd(), 'data', 'activity.json');
+const ACTIVITY_FILE_PATH = getDataFilePath('activity.json');
 
-// dublicate code for loadDataA and loadDataB - issue in code quality
-function loadDataA() {
-  if (!fs.existsSync(fp)) {
-    fs.writeFileSync(fp, '[]');
+function validateActivityPayload(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new HttpError(400, 'Body must be a JSON object.');
   }
 
-  let raw = fs.readFileSync(fp, 'utf8');
-  if (!raw) {
-    raw = '[]';
+  const allowedFields = ['action', 'info'];
+  const unsupportedFields = Object.keys(payload).filter(
+    (field) => !allowedFields.includes(field)
+  );
+
+  if (unsupportedFields.length > 0) {
+    throw new HttpError(400, 'Body contains unsupported fields.', {
+      unsupportedFields,
+    });
   }
 
-  return JSON.parse(raw);
+  const normalized = {};
+  for (const field of allowedFields) {
+    if (!Object.hasOwn(payload, field)) {
+      continue;
+    }
+
+    if (typeof payload[field] !== 'string' || !payload[field].trim()) {
+      throw new HttpError(400, `"${field}" must be a non-empty string.`);
+    }
+
+    normalized[field] = payload[field].trim();
+  }
+
+  return normalized;
 }
 
-function loadDataB() {
-  if (!fs.existsSync(fp)) {
-    fs.writeFileSync(fp, '[]');
-  }
-
-  let raw = fs.readFileSync(fp, 'utf8');
-  if (!raw) {
-    raw = '[]';
-  }
-// no json validation/error handling - issue in bug
-  return JSON.parse(raw);
+async function getAllActivity() {
+  return readJsonArray(ACTIVITY_FILE_PATH);
 }
 
-function getAllActivity() {
-  const arr = loadDataA();
-  return arr;
-}
-
-//missing validation for input data - issue in bug
-function createNewActivity(b) {
-  const list = loadDataB();
-  const one = {
-    // weak id generation - issue in code quality
-    id: String(Date.now()),
-    action: b.action,
-    info: b.info,
+async function createNewActivity(payload) {
+  const normalized = validateActivityPayload(payload);
+  const activity = {
+    id: createId(),
+    ...normalized,
     when: new Date().toISOString(),
   };
 
-  list.push(one);
-  // write to file synchronously - issue in code quality (use async write instead or file locking)
-  fs.writeFileSync(fp, JSON.stringify(list, null, 2));
-  return one;
+  await updateJsonArray(ACTIVITY_FILE_PATH, (activities) => {
+    activities.push(activity);
+  });
+
+  return activity;
 }
 
 module.exports = {

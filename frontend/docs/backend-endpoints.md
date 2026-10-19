@@ -141,7 +141,6 @@ type TasksSummary = {
   total: number;
   byStatus: {
     todo: number;
-    "in-progress": number;
     done: number;
   };
   recentActivityCount: number;
@@ -151,5 +150,11 @@ type GetTasksSummaryResponse = TasksSummary;
 ```
 
 Notes:
-- `in-progress` is currently returned as `0` because task data only includes boolean `completed`.
+- Task status is represented by the boolean `completed`, so the summary includes only `todo` and `done`.
+- `recentActivityCount` counts valid activity timestamps from the preceding seven days.
 - Response shape is raw object.
+
+## Request limits
+
+- JSON request bodies are limited to 16 KB.
+- Write requests to `/tasks` and `/activity` are limited to 100 requests per IP per 15 minutes. Read requests are not rate-limited.

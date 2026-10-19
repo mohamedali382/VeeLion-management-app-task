@@ -80,6 +80,10 @@ function validateUpdateTask(payload) {
     throw new HttpError(400, 'Provide at least one updatable field.');
   }
 
+  if (normalized.title !== undefined && normalized.title.length < 2) {
+    throw new HttpError(400, 'Title must be at least 2 characters long.');
+  }
+
   return normalized;
 }
 
