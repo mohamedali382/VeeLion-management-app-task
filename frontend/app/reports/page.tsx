@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { parseErrorMessage, parseTasksSummary } from "@/lib/apiValidation";
 import type { TasksSummary } from "@/types/api";
@@ -58,12 +57,6 @@ export default function ReportsPage() {
 
   return (
     <main className="stack reports-page">
-      <nav>
-        <Link href="/" className="button">
-          Back
-        </Link>
-      </nav>
-
       <header className="card report-header">
         <h1>Task Reports</h1>
         <p className="muted-text">Task status and activity summary</p>

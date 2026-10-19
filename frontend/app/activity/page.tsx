@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { parseActivityResponse, parseErrorMessage } from "@/lib/apiValidation";
 import type { ActivityLog } from "@/types/api";
@@ -65,12 +64,6 @@ export default function ActivityPage() {
 
   return (
     <main className="stack">
-      <nav>
-        <Link href="/" className="button">
-          Back
-        </Link>
-      </nav>
-
       <section className="card activity-panel">
         <h1>Activity Feed</h1>
 

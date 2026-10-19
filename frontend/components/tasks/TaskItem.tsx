@@ -9,11 +9,17 @@ type TaskItemProps = {
 };
 
 export function TaskItem({ task, busy, error, onToggle, onRetry }: TaskItemProps) {
+  const statusLabel = task.status === "in-progress"
+    ? "In progress"
+    : task.status === "done"
+      ? "Completed"
+      : "To do";
+
   return (
     <li className="card task-item">
       <div className="task-item-heading">
         <p className="task-item-title">{task.title}</p>
-        <span className="badge">{task.completed ? "Completed" : "Pending"}</span>
+        <span className={`badge status-badge status-${task.status}`}>{statusLabel}</span>
       </div>
 
       <small className="muted-text">
